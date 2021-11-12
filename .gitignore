@@ -1,0 +1,12 @@
+__pycache__/
+.ipynb_checkpoints/
+mlruns/
+data/
+raw_data/
+raw_data
+nohup.out
+.venv
+.vscode
+*.ipynb
+.venv
+.DS_Store

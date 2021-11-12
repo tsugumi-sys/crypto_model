@@ -1,0 +1,18 @@
+import unittest
+import os
+import sys
+
+sys.path.append("..")
+
+from common.constants import DATAFOLDER
+
+
+# constants.py test
+class TestCONSTANS(unittest.TestCase):
+    def test_path(self):
+        self.assertTrue(os.path.exists(DATAFOLDER.raw_data_root_path))
+        self.assertTrue(os.path.exists(DATAFOLDER.cleaned_data_root_path))
+
+
+if __name__ == "__main__":
+    unittest.main()
