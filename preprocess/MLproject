@@ -1,0 +1,13 @@
+name: crypto_bot_model
+
+entry_points:
+    preprocess:
+        parameters:
+            downstream: {type: string, default: /data/preprocess/}
+            n_jobs: {type: int, default: 5}
+            n_splits: {type: int, default: 6}
+        command: |
+            python -m src.preprocess \
+                --downstream {downstream} \
+                --n_jobs {n_jobs} \
+                --n_splits {n_splits}

@@ -10,3 +10,4 @@ nohup.out
 *.ipynb
 .venv
 .DS_Store
+.env

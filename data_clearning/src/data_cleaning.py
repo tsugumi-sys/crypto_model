@@ -56,7 +56,7 @@ def main():
 
     logger.info("Start clearning data ...")
     with custom_progressbar(tqdm(desc="Data Cleaning", total=len(asset_info.keys()))):
-        Parallel(n_jobs=5)(
+        Parallel(n_jobs=n_jobs)(
             delayed(data_clearning)(
                 data=data,
                 asset_name=name,
