@@ -7,7 +7,6 @@ raw_data
 nohup.out
 .venv
 .vscode
-*.ipynb
 .venv
 .DS_Store
 .env
