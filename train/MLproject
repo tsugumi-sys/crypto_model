@@ -1,0 +1,11 @@
+name: crypto_bot_model
+
+entry_points:
+    train:
+        parameters:
+            upstream: {type: string, default: /data/preprocess/}
+            downstream: {type: string, default: /data/train/}
+        command: |
+            python -m src.train \
+                --upstream {upstream} \
+                --downstream {downstream} \
