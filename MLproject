@@ -7,8 +7,16 @@ entry_points:
             preprocess_n_jobs: {type: int, default: 5}
             preprocess_n_splits: {type: int, default: 6}
 
+            train_model_type: {type: str, default: lgbc}
+            train_downstream: {type: str, default: ../data/train/}
+
+            evaluate_downstream: {type: string, default: ../data/evaluate/}
+
         command: |
             python -m main \
                 --preprocess_downstream {preprocess_downstream} \
                 --preprocess_n_jobs {preprocess_n_jobs} \
                 --preprocess_n_splits {preprocess_n_splits} \
+                --train_model_type {train_model_type} \
+                --train_downstream {train_downstream} \
+                --evaluate_downstream {evaluate_downstream} \

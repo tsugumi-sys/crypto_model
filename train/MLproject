@@ -3,9 +3,13 @@ name: crypto_bot_model
 entry_points:
     train:
         parameters:
+            model_type: {type: string, default: lgbc}
             upstream: {type: string, default: /data/preprocess/}
             downstream: {type: string, default: /data/train/}
+            evaluate_downstream: {type: string, default: /data/evaluate/}
         command: |
             python -m src.train \
+                --model_type {model_type} \
                 --upstream {upstream} \
                 --downstream {downstream} \
+                --evaluate_downstream {evaluate_downstream}

@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import os
 from typing import Dict
 import sys
@@ -6,11 +7,13 @@ from tqdm import tqdm
 from joblib import Parallel, delayed
 from multiprocessing import cpu_count
 
-from common.progress_bar import custom_progressbar
+from src.features import sma
+from src.label_features import sample_target
 
 sys.path.append("..")
 from common.constants import DATAFOLDER
 from common.custom_logger import CustomLogger
+from common.progress_bar import custom_progressbar
 
 logger = CustomLogger("Preprocess_Logger")
 
@@ -30,11 +33,6 @@ def agg_cpcv_folds(n_jobs: int, downstream_directory: str, split_meta_info):
         )
 
     return data_meta_info
-
-
-def sma10(df):
-    hilo = (df["High"] / df["Low"]) / 2
-    return df["Close"].rolling(10).mean() / hilo
 
 
 def agg_feature(downstream_directory: str, data_timestamps: Dict):
@@ -61,7 +59,9 @@ def agg_feature(downstream_directory: str, data_timestamps: Dict):
                 for _fold_idx in cpcv_fold[senario_idx][_type]:
                     start_idx, end_idx = cpcv_fold[senario_idx][_type][_fold_idx]["start"], cpcv_fold[senario_idx][_type][_fold_idx]["end"]
                     _df = df.loc[start_idx : end_idx + 1, target_columns]
-                    _df["sma20"] = sma10(df)
+                    _df["sma20"] = sma(_df, 10)
+                    _df["target"] = sample_target(_df)
+                    _df = _df.dropna()
                     save_path = os.path.join(_save_dir, f"{_fold_idx}.parquet.gzip")
                     _df.to_parquet(save_path, engine="pyarrow", compression="gzip")
                     data_timestamps["cpcv_folds"][cpcv_fold_idx][senario_idx][_type][_fold_idx] = save_path

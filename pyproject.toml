@@ -18,6 +18,8 @@ optuna = "^2.10.0"
 pyarrow = "^6.0.0"
 skl2onnx = "^1.10.0"
 python-dotenv = "^0.19.2"
+lightgbm = "^3.3.1"
+numba = "^0.54.1"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.9.2"
