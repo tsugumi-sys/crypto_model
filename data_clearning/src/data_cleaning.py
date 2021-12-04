@@ -8,7 +8,7 @@ from tqdm import tqdm
 import os
 
 sys.path.append(".")
-from common.constants import DATAFOLDER, ASSET_INFO
+from common.constants import DATAFOLDER, COINNAMES
 from common.custom_logger import CustomLogger
 from common.progress_bar import custom_progressbar
 
@@ -16,20 +16,47 @@ logging.basicConfig(level=logging.INFO)
 logger = CustomLogger("Data_Cleaning")
 
 
-def data_clearning(data, asset_name, asset_id):
-    coin_df = data[data["Asset_ID"] == asset_id].set_index("timestamp")
-    coin_df = fillna(coin_df)
-    asset_name = asset_name.replace(" ", "")
-    coin_df.to_parquet(
-        DATAFOLDER.cleaned_data_root_path + f"{asset_name}.parquet.gzip",
-        engine="pyarrow",
-        compression="gzip",
-    )
+def data_clearning(coin_name: str):
+    data_folder = os.path.join(DATAFOLDER.raw_data_root_path, coin_name)
+    save_folder = os.path.join(DATAFOLDER.cleaned_data_root_path, coin_name)
+    os.makedirs(save_folder, exist_ok=True)
+
+    csv_files = os.listdir(data_folder)
+    csv_files.sort()
+
+    columns = [
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Volume",
+        "CloseTime",
+        "QuoteAssetVolume",
+        "NumberOfTrades",
+        "TakerBuyBaseAssetVolume",
+        "TakerBuyQuoteAssetVolume",
+        "Ignore",
+    ]
+    df = pd.DataFrame(columns=columns, index="OpenTime")
+
+    for csv_file in csv_files:
+        csv_file_path = os.path.join(data_folder, csv_file)
+        _df = pd.read_csv(csv_file_path, names=columns, index_col="OpenTime")
+        _df = fillna(df, step=900)
+
+        if len(df) > 0:
+            assert df.index[-1] + 900 == _df.index[0]
+
+        df = df.append(_df, ignore_index=True)
+        df.index = df.sort_index()
+
+    df.to_parquet(os.path.join(save_folder, f"{coin_name}.parquet.gzip"), engine="pyarrow", compression="gzip")
+    print(df.isna().sum().sum())
 
 
-def fillna(df: pd.DataFrame):
+def fillna(df: pd.DataFrame, step: int = 900):
     df = df.sort_index()
-    df = df.reindex(range(df.index[0], df.index[-1] + 60, 60), method="pad")
+    df = df.reindex(range(df.index[0], df.index[-1] + step, step), method="pad")
     return df
 
 
@@ -51,18 +78,15 @@ def main():
     os.makedirs(DATAFOLDER.cleaned_data_root_path, exist_ok=True)
 
     logger.info("Loading raw data ...")
-    data = pd.read_csv(DATAFOLDER.raw_data_root_path + "train.csv")
-    asset_info = ASSET_INFO.asset_info
+    coin_names = COINNAMES.coin_names()
 
     logger.info("Start clearning data ...")
-    with custom_progressbar(tqdm(desc="Data Cleaning", total=len(asset_info.keys()))):
+    with custom_progressbar(tqdm(desc="Data Cleaning", total=len(coin_names))):
         Parallel(n_jobs=n_jobs)(
             delayed(data_clearning)(
-                data=data,
-                asset_name=name,
-                asset_id=asset_info[name]["id"],
+                coin_name=coin_name,
             )
-            for name in asset_info.keys()
+            for coin_name in coin_names
         )
 
     logger.info(f"Data has saved in {DATAFOLDER.cleaned_data_root_path}")

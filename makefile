@@ -11,7 +11,7 @@ train:
 .PHONY: ui
 ui:
 	poetry run mlflow ui
-clearn_data: data_clearning/src/data_cleaning.py
+clean_data: data_clearning/src/data_cleaning.py
 	poetry run python data_clearning/src/data_cleaning.py \
 		--n_jobs=5
 
