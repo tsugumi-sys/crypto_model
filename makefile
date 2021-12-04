@@ -14,3 +14,6 @@ ui:
 clearn_data: data_clearning/src/data_cleaning.py
 	poetry run python data_clearning/src/data_cleaning.py \
 		--n_jobs=5
+
+download_binance_data: ./binance_data_loader/download_klines.sh
+	chmod +x ./binance_data_loader/download_klines.sh && ./binance_data_loader/download_klines.sh
