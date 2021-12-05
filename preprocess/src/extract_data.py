@@ -1,5 +1,6 @@
 from typing import Dict, List
 import pandas as pd
+import numpy as np
 import os
 import sys
 import itertools
@@ -8,7 +9,7 @@ from joblib import Parallel, delayed
 from multiprocessing import cpu_count
 
 sys.path.append("..")
-from common.constants import DATAFOLDER, ASSET_INFO
+from common.constants import DATAFOLDER, COINNAMES
 from common.custom_logger import CustomLogger
 from common.progress_bar import custom_progressbar
 
@@ -24,21 +25,20 @@ def split_data(n_splits: int, n_jobs: int) -> List[Dict]:
         logger.warning(f"CPU core for multiproceeessing is set to {cpu_count()-1}.")
         n_jobs = cpu_count() - 1
 
-    asset_info = ASSET_INFO.asset_info
+    coin_names = COINNAMES.coin_names()
 
-    with custom_progressbar(tqdm(desc=f"Data splitting into {n_splits}", total=len(asset_info.keys()))):
+    with custom_progressbar(tqdm(desc=f"Data splitting into {n_splits}", total=len(coin_names))):
         all_data_timestamps = Parallel(n_jobs=n_jobs)(
             delayed(splitted_data_timestamps)(
                 n_splits=n_splits,
-                asset_name=name,
-                asset_id=asset_info[name]["id"],
+                coin_name=coin_name,
             )
-            for name in asset_info.keys()
+            for coin_name in coin_names
         )
 
     split_meta_info = {}
     for data_timestamps in all_data_timestamps:
-        split_meta_info[data_timestamps["asset_name"]] = cpcv_split(n_test_folds=2, data_timestamps=data_timestamps)
+        split_meta_info[data_timestamps["coin_name"]] = cpcv_split(n_test_folds=2, data_timestamps=data_timestamps)
 
     return split_meta_info
 
@@ -108,29 +108,20 @@ def cpcv_split(n_test_folds: int, data_timestamps: List[Dict]) -> Dict:
                     _senario[sub_senario_idx]["train"][_train_fold_idx] = data_timestamps["splitted_timestamps"][_train_fold_idx]
             cpcv_folds.append(_senario)
 
-    return {"asset_name": data_timestamps["asset_name"], "asset_id": data_timestamps["asset_id"], "cpcv_folds": cpcv_folds}
+    return {"coin_name": data_timestamps["coin_name"], "cpcv_folds": cpcv_folds}
 
 
-def splitted_data_timestamps(n_splits: int, asset_name: str, asset_id: int) -> Dict:
-    _asset_name = asset_name.replace(" ", "")
+def splitted_data_timestamps(n_splits: int, coin_name: str) -> Dict:
     data = pd.read_parquet(
-        os.path.join(DATAFOLDER.cleaned_data_root_path, f"{_asset_name}.parquet.gzip"),
+        os.path.join(DATAFOLDER.cleaned_data_root_path, coin_name, f"{coin_name}.parquet.gzip"),
         engine="pyarrow",
     )
     _timestamps = data.index.values.tolist()
-    split_length = len(_timestamps) // n_splits
 
     splitted_timestamps = {}
-    first_timestamps = 0
-    for i in range(split_length, len(_timestamps), split_length):
-        splitted_timestamps[i // split_length - 1] = {
-            "start": _timestamps[first_timestamps:i][0],
-            "end": _timestamps[first_timestamps:i][-1],
+    for idx, timestamps in enumerate(np.array_split(np.array(_timestamps), n_splits)):
+        splitted_timestamps[idx] = {
+            "start": int(timestamps[0]),
+            "end": int(timestamps[-1]),
         }
-        first_timestamps = i
-
-    splitted_timestamps[len(_timestamps) // split_length - 1] = {
-        "start": _timestamps[first_timestamps:][0],
-        "end": _timestamps[first_timestamps:][-1],
-    }
-    return {"asset_name": asset_name, "asset_id": asset_id, "splitted_timestamps": splitted_timestamps}
+    return {"coin_name": coin_name, "splitted_timestamps": splitted_timestamps}

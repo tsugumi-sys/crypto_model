@@ -8,7 +8,7 @@ from tqdm import tqdm
 import os
 
 sys.path.append(".")
-from common.constants import DATAFOLDER, COINNAMES
+from common.constants import DATAFOLDER, COINNAMES, COLUMNS
 from common.custom_logger import CustomLogger
 from common.progress_bar import custom_progressbar
 
@@ -24,39 +24,26 @@ def data_clearning(coin_name: str):
     csv_files = os.listdir(data_folder)
     csv_files.sort()
 
-    columns = [
-        "Open",
-        "High",
-        "Low",
-        "Close",
-        "Volume",
-        "CloseTime",
-        "QuoteAssetVolume",
-        "NumberOfTrades",
-        "TakerBuyBaseAssetVolume",
-        "TakerBuyQuoteAssetVolume",
-        "Ignore",
-    ]
-    df = pd.DataFrame(columns=columns, index="OpenTime")
+    columns = COLUMNS.default_columns
+    df = pd.DataFrame(columns=columns)
+    df = df.set_index("OpenTime")
 
     for csv_file in csv_files:
         csv_file_path = os.path.join(data_folder, csv_file)
-        _df = pd.read_csv(csv_file_path, names=columns, index_col="OpenTime")
-        _df = fillna(df, step=900)
+        csv_df = pd.read_csv(csv_file_path, names=columns, index_col="OpenTime")
+        df = df.append(csv_df)
 
-        if len(df) > 0:
-            assert df.index[-1] + 900 == _df.index[0]
-
-        df = df.append(_df, ignore_index=True)
-        df.index = df.sort_index()
-
+    df = sort_index_fillna(df, step=900)
     df.to_parquet(os.path.join(save_folder, f"{coin_name}.parquet.gzip"), engine="pyarrow", compression="gzip")
-    print(df.isna().sum().sum())
 
 
-def fillna(df: pd.DataFrame, step: int = 900):
+def sort_index_fillna(df: pd.DataFrame, step: int = 900):
     df = df.sort_index()
-    df = df.reindex(range(df.index[0], df.index[-1] + step, step), method="pad")
+    df.index = df.index // 1000  # Convert milisecond to second.
+    df = df.reindex(range(df.index[0], df.index[-1] + step, step))
+    df = df.fillna(method="pad")
+
+    print(f"The number of NaN is {df.isna().sum().sum()}. ({100*(df.isna().sum().sum()/len(df))}%)")
     return df
 
 

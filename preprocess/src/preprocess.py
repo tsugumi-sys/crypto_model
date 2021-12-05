@@ -6,7 +6,7 @@ import json
 import mlflow
 
 from src.extract_data import split_data
-from src.agg_feature import agg_cpcv_folds
+from src.feature_aggregation import agg_cpcv_folds
 
 sys.path.append("..")
 from common.custom_logger import CustomLogger

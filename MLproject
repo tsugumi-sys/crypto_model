@@ -7,7 +7,7 @@ entry_points:
             preprocess_n_jobs: {type: int, default: 5}
             preprocess_n_splits: {type: int, default: 6}
 
-            train_model_type: {type: str, default: lgbc}
+            train_model_type: {type: str, default: lgbr}
             train_downstream: {type: str, default: ../data/train/}
 
             evaluate_downstream: {type: string, default: ../data/evaluate/}

@@ -27,3 +27,28 @@ class ASSET_INFO:
     asset_info = {
         "BTCUSDT": {},
     }
+
+
+class COLUMNS:
+    default_columns = [
+        "OpenTime",
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Volume",
+        "CloseTime",
+        "QuoteAssetVolume",
+        "NumberOfTrades",
+        "TakerBuyBaseAssetVolume",
+        "TakerBuyQuoteAssetVolume",
+        "Ignore",
+    ]
+
+    target_columns = [
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Volume",
+    ]

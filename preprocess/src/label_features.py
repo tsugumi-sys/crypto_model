@@ -2,6 +2,7 @@ from typing import Tuple
 import pandas as pd
 import numpy as np
 import numba
+from scipy.ndimage.interpolation import shift
 
 
 def atr(df: pd.DataFrame, period: int = 14) -> np.ndarray:
@@ -58,47 +59,49 @@ def sell_calc_force_entry_price(sell_price: np.ndarray, high_price: np.ndarray, 
 
 
 def position_label(
-    df: pd.DataFrame, pips: float = 1.0, fee: float = 0.01, horizon_barrier: int = 1, executionType: str = "limit"
+    df: pd.DataFrame, pips: float = 1.0, fee_percent: float = 0.01, horizon_barrier: int = 1, executionType: str = "limit"
 ) -> Tuple[np.ndarray, np.ndarray]:
     if pips <= 0:
         raise ValueError(f"Invalid 'pips' value {pips}. 'pips' shoud be more than 0")
 
-    if executionType not in ["limit", "stop"]:
+    if executionType not in ["limit", "stop", "check"]:
         raise ValueError(f"Invalid 'executionType' value {executionType}. 'executionType' shoud be in ['limit', 'stop']")
 
-    df["fee"] = fee
+    df["fee"] = fee_percent / 100
     buy_price, sell_price = position_price_by_atr(df, pips)
     buy_executed = ((buy_price / pips).round() > (df["Low"].shift(-1) / pips).round()).astype("float64")
     sell_executed = ((sell_price / pips).round() < (df["High"].shift(-1) / pips).round()).astype("float64")
-    buy_force_entry_price, _ = buy_calc_force_entry_price(buy_price.values, df["Low"].values, pips)
-    sell_force_entry_price, _ = sell_calc_force_entry_price(sell_price.values, df["High"].values, pips)
+    buy_force_entry_price, buy_force_entry_time = buy_calc_force_entry_price(buy_price.values, df["Low"].values, pips)
+    sell_force_entry_price, sell_force_entry_time = sell_calc_force_entry_price(sell_price.values, df["High"].values, pips)
 
     y_buy = np.where(
         buy_executed,
-        sell_force_entry_price.shift(-horizon_barrier) / buy_price - 1 - 2 * df["fee"],
+        shift(sell_force_entry_price, -horizon_barrier, cval=np.NaN, order=0) / buy_price - 1 - 2 * df["fee"],
         0,
     )
     buy_cost = np.where(
         buy_executed,
-        buy_price / df["Close"] - 1 + fee,
+        buy_price / df["Close"] - 1 + df["fee"],
         0,
     )
 
     y_sell = np.where(
         sell_executed,
-        (buy_force_entry_price.shift(-horizon_barrier) / sell_price - 1) * (-1) - 2 * df["fee"],
+        (shift(buy_force_entry_price, -horizon_barrier, cval=np.NaN, order=0) / sell_price - 1) * (-1) - 2 * df["fee"],
         0,
     )
     sell_cost = np.where(
         sell_executed,
-        (sell_price / df["Close"] - 1) * (-1) + fee,
+        (sell_price / df["Close"] - 1) * (-1) + df["fee"],
         0,
     )
 
     if executionType == "limit":
         return y_buy, buy_cost, y_sell, sell_cost
-    else:
+    elif executionType == "stop":
         return y_sell, sell_cost, y_buy, buy_cost
+    else:
+        return y_buy, buy_cost, y_sell, sell_cost, buy_executed, sell_executed, buy_force_entry_time, sell_force_entry_time
 
 
 def sample_target(df: pd.DataFrame):
