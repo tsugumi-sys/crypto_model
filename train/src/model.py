@@ -76,32 +76,31 @@ def cpcv_train(
     meta_cpcv_info = json.load(meta_cpcv_info)
 
     for each_asset in meta_cpcv_info:
-        asset_name = each_asset["asset_name"]
+        asset_name = each_asset["coin_name"]
         cpcv_folds = each_asset["cpcv_folds"]
-        if asset_name == "Bitcoin":
-            for fold_idx, fold in enumerate(cpcv_folds):
-                for senario in fold.keys():
-                    train = fold[senario]["train"]
-                    test = fold[senario]["test"]
-                    valid = fold[senario]["valid"]
+        for fold_idx, fold in enumerate(cpcv_folds):
+            for senario in fold.keys():
+                train = fold[senario]["train"]
+                test = fold[senario]["test"]
+                valid = fold[senario]["valid"]
 
-                    train_dataset = pd.DataFrame()
-                    for k in train.keys():
-                        _df = pd.read_parquet(train[k], engine="pyarrow")
-                        train_dataset = train_dataset.append(_df, ignore_index=True)
+                train_dataset = pd.DataFrame()
+                for k in train.keys():
+                    _df = pd.read_parquet(train[k], engine="pyarrow")
+                    train_dataset = train_dataset.append(_df, ignore_index=True)
 
-                    test_dataset = pd.DataFrame()
-                    for k in test.keys():
-                        _df = pd.read_parquet(test[k], engine="pyarrow")
-                        test_dataset = test_dataset.append(_df, ignore_index=True)
+                test_dataset = pd.DataFrame()
+                for k in test.keys():
+                    _df = pd.read_parquet(test[k], engine="pyarrow")
+                    test_dataset = test_dataset.append(_df, ignore_index=True)
 
-                    evaluate_info = {}
-                    for k in valid.keys():
-                        evaluate_info[k] = {}
-                        evaluate_df = pd.read_parquet(valid[k], engine="pyarrow")
-                        evaluate_info[k]["data"] = evaluate_df
-                        filename_dir = os.path.join(evaluate_downstream_directory, asset_name, str(fold_idx))
-                        os.makedirs(filename_dir, exist_ok=True)
-                        evaluate_info[k]["filename"] = os.path.join(filename_dir, f"{k}.parquet.gzip")
+                evaluate_info = {}
+                for k in valid.keys():
+                    evaluate_info[k] = {}
+                    evaluate_df = pd.read_parquet(valid[k], engine="pyarrow")
+                    evaluate_info[k]["data"] = evaluate_df
+                    filename_dir = os.path.join(evaluate_downstream_directory, asset_name, str(fold_idx))
+                    os.makedirs(filename_dir, exist_ok=True)
+                    evaluate_info[k]["filename"] = os.path.join(filename_dir, f"{k}.parquet.gzip")
 
-                    train_and_evaluate(model_type, model, params, train_dataset, test_dataset, evaluate_info)
+                train_and_evaluate(model_type, model, params, train_dataset, test_dataset, evaluate_info)
