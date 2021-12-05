@@ -64,29 +64,29 @@ def main():
         )
         preprocess_run = mlflow.tracking.MlflowClient().get_run(preprocess_run.run_id)
 
-        current_dir = os.getcwd()
-        train_upstream = os.path.join(
-            current_dir,
-            "mlruns/",
-            str(mlflow_experiment_id),
-            preprocess_run.info.run_id,
-            "artifacts/",
-        )
+        # current_dir = os.getcwd()
+        # train_upstream = os.path.join(
+        #     current_dir,
+        #     "mlruns/",
+        #     str(mlflow_experiment_id),
+        #     preprocess_run.info.run_id,
+        #     "artifacts/",
+        # )
 
-        train_upstream = "/Users/akiranoda/projects/crypto_model/mlruns/2/454431524cfa4334a86672a99b84b061/artifacts/"
+        # train_upstream = "/Users/akiranoda/projects/crypto_model/mlruns/2/454431524cfa4334a86672a99b84b061/artifacts/"
 
-        train_run = mlflow.run(
-            uri="./train",
-            entry_point="train",
-            backend="local",
-            parameters={
-                "model_type": args.train_model_type,
-                "upstream": train_upstream,
-                "downstream": args.train_downstream,
-                "evaluate_downstream": args.evaluate_downstream,
-            },
-            use_conda=False,
-        )
+        # train_run = mlflow.run(
+        #     uri="./train",
+        #     entry_point="train",
+        #     backend="local",
+        #     parameters={
+        #         "model_type": args.train_model_type,
+        #         "upstream": train_upstream,
+        #         "downstream": args.train_downstream,
+        #         "evaluate_downstream": args.evaluate_downstream,
+        #     },
+        #     use_conda=False,
+        # )
 
 
 if __name__ == "__main__":
