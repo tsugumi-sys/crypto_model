@@ -21,6 +21,12 @@ def main():
         formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
+        "--fee_percent",
+        type=float,
+        default=0.0,
+        help="Fee percentage of exchange",
+    )
+    parser.add_argument(
         "--downstream",
         type=str,
         default="/data/preprocess/",
@@ -52,6 +58,7 @@ def main():
         n_jobs=n_jobs,
         downstream_directory=downstream_directory,
         split_meta_info=split_meta_info,
+        fee_percent=args.fee_percent,
     )
 
     meta_split_path = os.path.join(downstream_directory, "meta_split.json")

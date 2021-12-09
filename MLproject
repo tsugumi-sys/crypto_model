@@ -6,6 +6,7 @@ entry_points:
             preprocess_downstream: {type: str, default: ../data/preprocess/}
             preprocess_n_jobs: {type: int, default: 5}
             preprocess_n_splits: {type: int, default: 6}
+            preprocess_fee_percent: {type: float, default: 0.1}
 
             train_model_type: {type: str, default: lgbr}
             train_downstream: {type: str, default: ../data/train/}
@@ -14,6 +15,7 @@ entry_points:
 
         command: |
             python -m main \
+                --preprocess_fee_percent {preprocess_fee_percent} \
                 --preprocess_downstream {preprocess_downstream} \
                 --preprocess_n_jobs {preprocess_n_jobs} \
                 --preprocess_n_splits {preprocess_n_splits} \

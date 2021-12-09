@@ -17,3 +17,6 @@ clean_data: data_clearning/src/data_cleaning.py
 
 download_binance_data: ./binance_data_loader/download_klines.sh
 	chmod +x ./binance_data_loader/download_klines.sh && ./binance_data_loader/download_klines.sh
+
+download_bybit_data: ./bybit_data_loader/download_klines.sh
+	chmod +x ./bybit_data_loader/download_klines.sh && ./bybit_data_loader/download_klines.sh

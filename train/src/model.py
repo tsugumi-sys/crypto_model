@@ -39,18 +39,22 @@ def train_and_evaluate(
     model_type: str,
     model,
     params: Dict,
-    train_dataset,
-    test_dataset,
+    train_dataset: pd.DataFrame,
+    test_dataset: pd.DataFrame,
     evaluate_info,
+    target_col: str,
+    exclude_col: list = ["buy_cost", "sell_cost"],
 ):
+    train_dataset = train_dataset.drop(exclude_col, axis=1)
+    test_dataset = test_dataset.drop(exclude_col, axis=1)
     trained_model = None
     if model_type == "rfc":
-        X_train, y_train = train_dataset.drop("target", axis=1), train_dataset["target"]
+        X_train, y_train = train_dataset.drop(target_col, axis=1), train_dataset[target_col]
         trained_model = model.fit(X_train, y_train)
 
     elif model_type in ["lgbc", "lgbr"]:
-        X_train, y_train = train_dataset.drop("target", axis=1), train_dataset["target"]
-        X_test, y_test = test_dataset.drop("target", axis=1), test_dataset["target"]
+        X_train, y_train = train_dataset.drop(target_col, axis=1), train_dataset[target_col]
+        X_test, y_test = test_dataset.drop(target_col, axis=1), test_dataset[target_col]
 
         train_data = lgb.Dataset(X_train, y_train)
         test_data = lgb.Dataset(X_test, y_test, reference=train_data)
@@ -59,9 +63,16 @@ def train_and_evaluate(
 
     for e_key in evaluate_info.keys():
         evaluate_dataset = evaluate_info[e_key]["data"]
-        preds = trained_model.predict(evaluate_dataset.drop("target", axis=1).values)
+        evaluate_dataset = evaluate_dataset.drop(exclude_col, axis=1)
+        preds = trained_model.predict(evaluate_dataset.drop(target_col, axis=1).values)
         evaluate_dataset["predict"] = preds
-        evaluate_dataset.to_parquet(evaluate_info[e_key]["filename"], engine="pyarrow", compression="gzip")
+        file_path = ""
+        for s in evaluate_info[e_key]["filename"].split("/"):
+            if "parquet.gzip" in s:
+                file_path += target_col + s
+            else:
+                file_path += s + "/"
+        evaluate_dataset.to_parquet(file_path, engine="pyarrow", compression="gzip")
 
 
 def cpcv_train(
@@ -76,7 +87,7 @@ def cpcv_train(
     meta_cpcv_info = json.load(meta_cpcv_info)
 
     for each_asset in meta_cpcv_info:
-        asset_name = each_asset["coin_name"]
+        coin_name = each_asset["coin_name"]
         cpcv_folds = each_asset["cpcv_folds"]
         for fold_idx, fold in enumerate(cpcv_folds):
             for senario in fold.keys():
@@ -99,8 +110,28 @@ def cpcv_train(
                     evaluate_info[k] = {}
                     evaluate_df = pd.read_parquet(valid[k], engine="pyarrow")
                     evaluate_info[k]["data"] = evaluate_df
-                    filename_dir = os.path.join(evaluate_downstream_directory, asset_name, str(fold_idx))
+
+                    filename_dir = os.path.join(evaluate_downstream_directory, coin_name, str(fold_idx))
                     os.makedirs(filename_dir, exist_ok=True)
                     evaluate_info[k]["filename"] = os.path.join(filename_dir, f"{k}.parquet.gzip")
 
-                train_and_evaluate(model_type, model, params, train_dataset, test_dataset, evaluate_info)
+                train_and_evaluate(
+                    model_type,
+                    model,
+                    params,
+                    train_dataset,
+                    test_dataset,
+                    evaluate_info,
+                    target_col="y_buy",
+                    exclude_col=["buy_cost", "sell_cost", "y_sell"],
+                )
+                train_and_evaluate(
+                    model_type,
+                    model,
+                    params,
+                    train_dataset,
+                    test_dataset,
+                    evaluate_info,
+                    target_col="y_sell",
+                    exclude_col=["buy_cost", "sell_cost", "y_buy"],
+                )
